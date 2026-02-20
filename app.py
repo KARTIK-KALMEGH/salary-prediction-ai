@@ -1,64 +1,58 @@
 import streamlit as st
 import pandas as pd
-from sklearn.ensemble import RandomForestRegressor
+from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import LabelEncoder
+from sklearn.ensemble import RandomForestRegressor
+from sklearn.metrics import r2_score, mean_absolute_error
 
-st.set_page_config(page_title="AI Salary Predictor", page_icon="💼", layout="wide")
-
-st.markdown("""
-    <style>
-    .main {background-color: #0e1117;}
-    h1 {color: #4CAF50;}
-    </style>
-""", unsafe_allow_html=True)
-
-st.title("💼 AI Salary Prediction System")
-st.write("An intelligent HR salary recommendation tool")
+st.title("💼 Employee Salary Prediction System")
 
 # Load dataset
 df = pd.read_csv("expected_ctc.csv")
 
-# Handle missing values
+# Data Cleaning
 for col in df.columns:
     if df[col].dtype == "object":
         df[col].fillna(df[col].mode()[0], inplace=True)
     else:
         df[col].fillna(df[col].median(), inplace=True)
 
-# Encode categorical columns
+# Encoding categorical columns
 le = LabelEncoder()
 for col in df.columns:
     if df[col].dtype == "object":
         df[col] = le.fit_transform(df[col])
 
+# Feature Selection
 X = df.drop("Expected_CTC", axis=1)
 y = df["Expected_CTC"]
 
-model = RandomForestRegressor(n_estimators=200)
-model.fit(X, y) 
+# Train-Test Split
+X_train, X_test, y_train, y_test = train_test_split(
+    X, y, test_size=0.2, random_state=42
+)
 
-# ---- ADD THIS BELOW ----
-from sklearn.metrics import r2_score
+# Model Training
+model = RandomForestRegressor(n_estimators=200, random_state=42)
+model.fit(X_train, y_train)
 
-y_pred = model.predict(X)
-score = r2_score(y, y_pred)
+# Model Evaluation
+y_pred = model.predict(X_test)
+r2 = r2_score(y_test, y_pred)
+mae = mean_absolute_error(y_test, y_pred)
 
-st.write(f"📈 Model Accuracy (R² Score): {round(score,2)}")
+st.subheader("📊 Model Performance")
+st.write(f"R² Score: {round(r2,2)}")
+st.write(f"Mean Absolute Error: {round(mae,2)}")
 
+# Prediction Section
 st.subheader("📋 Enter Candidate Details")
 
-col1, col2 = st.columns(2)
-
 inputs = []
-
-for i, col in enumerate(X.columns):
-    if i % 2 == 0:
-        val = col1.number_input(col)
-    else:
-        val = col2.number_input(col)
+for col in X.columns:
+    val = st.number_input(f"{col}")
     inputs.append(val)
 
-if st.button("🚀 Predict Salary"):
+if st.button("Predict Salary"):
     prediction = model.predict([inputs])
-    st.success(f"💰 Recommended Salary: ₹ {round(prediction[0],2)}")
-
+    st.success(f"Predicted Salary: ₹ {round(prediction[0],2)}")
