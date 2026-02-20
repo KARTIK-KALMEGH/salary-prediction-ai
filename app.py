@@ -1,26 +1,43 @@
 import streamlit as st
 import pandas as pd
 from sklearn.ensemble import RandomForestRegressor
+from sklearn.preprocessing import LabelEncoder
+
+st.title("💼 AI Salary Prediction System")
 
 # Load dataset
 df = pd.read_csv("expected_ctc.csv")
 
-# Features
-X = df[['Total_Experience','Current_CTC','Last_Appraisal_Rating']]
-y = df['Expected_CTC']
+# ---------- DATA CLEANING ----------
+for col in df.columns:
+    if df[col].dtype == "object":
+        df[col].fillna(df[col].mode()[0], inplace=True)
+    else:
+        df[col].fillna(df[col].median(), inplace=True)
 
-# Train model
+# ---------- ENCODING TEXT TO NUMBER ----------
+le = LabelEncoder()
+
+for col in df.columns:
+    if df[col].dtype == "object":
+        df[col] = le.fit_transform(df[col])
+
+# ---------- SELECT FEATURES ----------
+X = df.drop("Expected_CTC", axis=1)
+y = df["Expected_CTC"]
+
+# ---------- TRAIN MODEL ----------
 model = RandomForestRegressor()
-model.fit(X,y)
+model.fit(X, y)
 
-# UI
-st.title("💼 AI Salary Prediction System")
 st.write("Enter candidate details")
 
-exp = st.number_input("Total Experience (years)")
-current = st.number_input("Current CTC")
-rating = st.number_input("Last Appraisal Rating")
+inputs = []
+
+for col in X.columns:
+    val = st.number_input(f"{col}")
+    inputs.append(val)
 
 if st.button("Predict Salary"):
-    pred = model.predict([[exp,current,rating]])
-    st.success(f"Predicted Expected Salary: ₹ {round(pred[0],2)}")
+    pred = model.predict([inputs])
+    st.success(f"Predicted Salary: ₹ {round(pred[0],2)}")
