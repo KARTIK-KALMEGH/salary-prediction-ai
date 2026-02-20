@@ -35,7 +35,15 @@ X = df.drop("Expected_CTC", axis=1)
 y = df["Expected_CTC"]
 
 model = RandomForestRegressor(n_estimators=200)
-model.fit(X, y)
+model.fit(X, y) 
+
+# ---- ADD THIS BELOW ----
+from sklearn.metrics import r2_score
+
+y_pred = model.predict(X)
+score = r2_score(y, y_pred)
+
+st.write(f"📈 Model Accuracy (R² Score): {round(score,2)}")
 
 st.subheader("📋 Enter Candidate Details")
 
@@ -53,3 +61,4 @@ for i, col in enumerate(X.columns):
 if st.button("🚀 Predict Salary"):
     prediction = model.predict([inputs])
     st.success(f"💰 Recommended Salary: ₹ {round(prediction[0],2)}")
+
